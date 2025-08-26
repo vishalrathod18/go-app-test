@@ -17,6 +17,14 @@ jobs:
         with:
           go-version: '1.21'
 
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: go-app/go.sum
+          key: ${{ runner.os }}-go-${{ hashFiles('go-app/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Install dependencies
         working-directory: go-app
         run: go mod tidy
@@ -37,8 +45,8 @@ jobs:
       - name: Configure JFrog CLI
         env:
           ARTIFACTORY_URL: https://uhgsaaspoc.jfrog.io/artifactory
-          ARTIFACTORY_USER: aashishgodse9867@gmail.com
-          ARTIFACTORY_PASSWORD: cmVmdGtuOjAxOjE3ODc3MjQ4MzU6ZnJOcWx4MmRHVW5QcWdEQk0xRjhPSjBMWWFw
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
         run: |
           jf c add rt-server --artifactory-url $ARTIFACTORY_URL --user $ARTIFACTORY_USER --password $ARTIFACTORY_PASSWORD --interactive=false
 
