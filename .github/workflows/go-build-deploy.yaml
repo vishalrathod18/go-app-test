@@ -44,4 +44,4 @@ jobs:
 
       - name: Publish to Artifactory
         run: |
-          jf rt u myapp "go-app-test-local/generic/myapp"
+          jf rt u myapp "https://uhgsaaspoc.jfrog.io/artifactory/go-app-test-local/generic/myapp"
