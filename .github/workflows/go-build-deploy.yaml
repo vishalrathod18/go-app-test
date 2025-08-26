@@ -73,7 +73,7 @@ jobs:
     - name: Build Go Project
       run: |
         cd go-app
-        go build -o myapp
+        go build -o ../myapp
 
     # Step 4: Upload artifact to JFrog Artifactory
     - name: Upload to JFrog Artifactory
