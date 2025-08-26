@@ -72,6 +72,7 @@ jobs:
     # Step 3: Build the Go project
     - name: Build Go Project
       run: |
+        cd go-app
         go build -o myapp
 
     # Step 4: Upload artifact to JFrog Artifactory
