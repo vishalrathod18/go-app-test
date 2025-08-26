@@ -3,7 +3,7 @@ package main
 import (
     "fmt"
     "net/http"
-    "go-app/internal/handler"
+    "./internal/handler"
 )
 
 func main() {
