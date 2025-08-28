@@ -1,13 +1,5 @@
 # name: Go Build & Publish to Artifactory
 
-# on:
-#   push:
-#     branches: [ go-test ]
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
-
 #     steps:
 #       - name: Checkout code
 #         uses: actions/checkout@v4
