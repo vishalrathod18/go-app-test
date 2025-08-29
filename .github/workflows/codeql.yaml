@@ -1,55 +1,55 @@
-name: "CodeQL Advanced"
+# name: "CodeQL Advanced"
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-  schedule:
-    - cron: '37 18 * * 0'
+# on:
+#   push:
+#     branches: [ "main" ]
+#   pull_request:
+#     branches: [ "main" ]
+#   schedule:
+#     - cron: '37 18 * * 0'
 
-jobs:
-  analyze:
-    name: Analyze (${{ matrix.language }})
-    runs-on: ubuntu-latest
+# jobs:
+#   analyze:
+#     name: Analyze (${{ matrix.language }})
+#     runs-on: ubuntu-latest
 
-    permissions:
-      security-events: write
-      packages: read
-      actions: read
-      contents: read
+#     permissions:
+#       security-events: write
+#       packages: read
+#       actions: read
+#       contents: read
 
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - language: go
-            build-mode: manual
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         include:
+#           - language: go
+#             build-mode: manual
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.21
+#       - name: Set up Go
+#         uses: actions/setup-go@v4
+#         with:
+#           go-version: 1.21
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
+#       - name: Initialize CodeQL
+#         uses: github/codeql-action/init@v3
+#         with:
+#           languages: ${{ matrix.language }}
+#           build-mode: ${{ matrix.build-mode }}
 
-      - name: Manual Build for Go
-        if: matrix.build-mode == 'manual'
-        shell: bash
-        run: |
-          echo "Running manual build for Go project..."
-          cd go-app
-          go build -o ../myapp
+#       - name: Manual Build for Go
+#         if: matrix.build-mode == 'manual'
+#         shell: bash
+#         run: |
+#           echo "Running manual build for Go project..."
+#           cd go-app
+#           go build -o ../myapp
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:${{ matrix.language }}"
+#       - name: Perform CodeQL Analysis
+#         uses: github/codeql-action/analyze@v3
+#         with:
+#           category: "/language:${{ matrix.language }}"
