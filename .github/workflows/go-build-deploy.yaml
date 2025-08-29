@@ -1,49 +1,12 @@
-# name: Go Build & Publish to Artifactory
-
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-
-#       - name: Set up Go
-#         uses: actions/setup-go@v5
-#         with:
-#           go-version: '1.21'
-
-#       - name: Install dependencies
-#         working-directory: go-app
-#         run: go mod tidy
-
-#       - name: Build
-#         working-directory: go-app
-#         run: go build -o ../myapp
-
-#       - name: Test
-#         working-directory: go-app
-#         run: go test ./...
-
-#       - name: Install JFrog CLI
-#         run: |
-#           curl -fL https://getcli.jfrog.io | sh
-#           sudo mv jfrog /usr/local/bin/jf
-
-#       - name: Configure JFrog CLI
-#         env:
-#           ARTIFACTORY_URL: https://uhgsaaspoc.jfrog.io/artifactory
-#           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
-#           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-#         run: |
-#           jf c add rt-server --artifactory-url $ARTIFACTORY_URL --user $ARTIFACTORY_USER --password $ARTIFACTORY_PASSWORD --interactive=false
-
-#       - name: Publish to Artifactory
-#         run: |
-#           jf rt u myapp "go-app-test/release/myapp"
-
 name: CI Build and Upload Go Project
+permissions:
+  contents: read
+  pull-requests: write
 
 on:
   push:
     branches:
-      - go-test
+      - main
   pull_request:
 
 jobs:
