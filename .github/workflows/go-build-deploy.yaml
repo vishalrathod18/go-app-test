@@ -3,7 +3,7 @@ name: CI Build and Upload Go Project
 on:
   push:
     branches:
-      - go-test
+      - main
   pull_request:
 
 jobs:
