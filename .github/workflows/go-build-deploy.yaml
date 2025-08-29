@@ -1,0 +1,79 @@
+# name: Go Build & Publish to Artifactory
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Set up Go
+#         uses: actions/setup-go@v5
+#         with:
+#           go-version: '1.21'
+
+#       - name: Install dependencies
+#         working-directory: go-app
+#         run: go mod tidy
+
+#       - name: Build
+#         working-directory: go-app
+#         run: go build -o ../myapp
+
+#       - name: Test
+#         working-directory: go-app
+#         run: go test ./...
+
+#       - name: Install JFrog CLI
+#         run: |
+#           curl -fL https://getcli.jfrog.io | sh
+#           sudo mv jfrog /usr/local/bin/jf
+
+#       - name: Configure JFrog CLI
+#         env:
+#           ARTIFACTORY_URL: https://uhgsaaspoc.jfrog.io/artifactory
+#           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+#           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+#         run: |
+#           jf c add rt-server --artifactory-url $ARTIFACTORY_URL --user $ARTIFACTORY_USER --password $ARTIFACTORY_PASSWORD --interactive=false
+
+#       - name: Publish to Artifactory
+#         run: |
+#           jf rt u myapp "go-app-test/release/myapp"
+
+name: CI Build and Upload Go Project
+
+on:
+  push:
+    branches:
+      - go-test
+  pull_request:
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the code
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # Step 2: Set up Go environment
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.21  # Specify the Go version
+
+    # Step 3: Build the Go project
+    - name: Build Go Project
+      run: |
+        cd go-app
+        go build -o ../myapp
+
+    # Step 4: Upload artifact to JFrog Artifactory
+    - name: Upload to JFrog Artifactory
+      env:
+        ARTIFACTORY_URL: https://uhgsaaspoc.jfrog.io/artifactory
+        ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+        ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      run: |
+        curl -u $ARTIFACTORY_USERNAME:$ARTIFACTORY_ACCESS_TOKEN \
+          -T myapp \
+          "$ARTIFACTORY_URL/go-uhg-go/myapp"
