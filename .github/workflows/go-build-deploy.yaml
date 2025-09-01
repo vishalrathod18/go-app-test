@@ -54,16 +54,34 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure Windows VM (Run as Background Process)
-        # env:
-        # ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
-        # ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_PASSWORD }}
-        run: |
-          az vm run-command invoke \
+      - name: Download myapp.exe to Azure VM
+          env:
+            ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+            ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+          run: |
+            pair="${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}"
+            script="\$pair = '${pair}'; \
+            \$bytes = [System.Text.Encoding]::UTF8.GetBytes(\$pair); \
+            \$encoded = [Convert]::ToBase64String(\$bytes); \
+            Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -Headers @{ Authorization = 'Basic ' + \$encoded } -OutFile 'C:\\myapp.exe'"
+
+            az vm run-command invoke \
               --resource-group "artifactory-migration" \
               --name "vm1" \
               --command-id RunPowerShellScript \
-              --scripts "$pair = '${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}'; $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair); $encoded = [Convert]::ToBase64String($bytes); Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -Headers @{ Authorization = 'Basic ' + $encoded } -OutFile 'C:\\myapp.exe'"
+              --scripts "$script"
+      
+
+      # - name: Deploy to Azure Windows VM (Run as Background Process)
+      #   # env:
+      #   # ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+      #   # ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      #   run: |
+      #     az vm run-command invoke \
+      #         --resource-group "artifactory-migration" \
+      #         --name "vm1" \
+      #         --command-id RunPowerShellScript \
+      #         --scripts "$pair = '${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}'; $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair); $encoded = [Convert]::ToBase64String($bytes); Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -Headers @{ Authorization = 'Basic ' + $encoded } -OutFile 'C:\\myapp.exe'"
 
       # - name: Deploy to Azure Windows VM as Service
       #   run: |
