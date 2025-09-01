@@ -60,8 +60,7 @@ jobs:
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
             --name ${{ secrets.AZURE_VM_NAME }} \
             --command-id RunPowerShellScript \
-            --scripts "Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -Headers @{ Authorization = 'Basic $( [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(${{ secrets.ARTIFACTORY_USERNAME }}:${{ secrets.ARTIFACTORY_PASSWORD }})) )' } -OutFile 'C:\\myapp.exe'"             
-
+            --scripts "Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -Headers @{ Authorization = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(${{ secrets.ARTIFACTORY_USERNAME }}:${{ secrets.ARTIFACTORY_PASSWORD }})) )' } -OutFile 'C:\\myapp.exe'"
       # - name: Deploy to Azure Windows VM as Service
       #   run: |
       #     az vm run-command invoke \
