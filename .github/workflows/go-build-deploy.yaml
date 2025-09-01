@@ -55,12 +55,16 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy to Azure Windows VM (Run as Background Process)
+        env:
+        ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USER }}
+        ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_PASSWORD }}
         run: |
           az vm run-command invoke \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --name ${{ secrets.AZURE_VM_NAME }} \
-            --command-id RunPowerShellScript \
-            --scripts "Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -Headers @{ Authorization = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('${{ secrets.ARTIFACTORY_USER }}:${{ secrets.ARTIFACTORY_PASSWORD }}')) )' } -OutFile 'C:\\myapp.exe'"
+              --resource-group "<your-resource-group>" \
+              --name "<your-vm-name>" \
+              --command-id RunPowerShellScript \
+              --scripts "$pair = '${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}'; $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair); $encoded = [Convert]::ToBase64String($bytes); Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -Headers @{ Authorization = 'Basic ' + $encoded } -OutFile 'C:\\myapp.exe'"
+
       # - name: Deploy to Azure Windows VM as Service
       #   run: |
       #     az vm run-command invoke \
