@@ -40,3 +40,44 @@ jobs:
         curl -u $ARTIFACTORY_USERNAME:$ARTIFACTORY_ACCESS_TOKEN \
           -T myapp \
           "$ARTIFACTORY_URL/go-uhg-go/myapp"
+
+  deploy:
+    needs: build-and-upload
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Windows VM as Service
+        run: |
+          az vm run-command invoke `
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} `
+            --name ${{ secrets.AZURE_VM_NAME }} `
+            --command-id RunPowerShellScript `
+            --scripts @'
+              $serviceName = "MyGoAppService"
+              $exePath = "C:\myapp.exe"
+
+              Write-Output "Stopping existing service if it exists..."
+              if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) {
+                Stop-Service -Name $serviceName -Force
+                sc.exe delete $serviceName
+                Start-Sleep -Seconds 3
+              }
+
+              Write-Output "Downloading latest binary..."
+              Invoke-WebRequest -Uri "https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp" -OutFile $exePath
+              Start-Sleep -Seconds 2
+
+              Write-Output "Creating new Windows service..."
+              sc.exe create $serviceName binPath= $exePath start= auto
+              Start-Sleep -Seconds 2
+
+              Write-Output "Starting service..."
+              Start-Service -Name $serviceName
+            '@        
