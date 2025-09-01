@@ -56,7 +56,7 @@ jobs:
 
       - name: Deploy to Azure Windows VM (Run as Background Process)
         env:
-        ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USER }}
+        ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
         ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_PASSWORD }}
         run: |
           az vm run-command invoke \
