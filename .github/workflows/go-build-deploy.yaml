@@ -54,13 +54,22 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure Windows VM as Service
+      - name: Deploy to Azure Windows VM (Run as Background Process)
         run: |
           az vm run-command invoke \
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
             --name ${{ secrets.AZURE_VM_NAME }} \
             --command-id RunPowerShellScript \
-            --scripts "$serviceName = 'MyGoAppService'; $exePath = 'C:\\myapp.exe'; if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) { Stop-Service -Name $serviceName -Force; sc.exe delete $serviceName; Start-Sleep -Seconds 3 }; Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -OutFile $exePath; Start-Sleep -Seconds 2; sc.exe create $serviceName binPath= $exePath start= auto; Start-Sleep -Seconds 2; Start-Service -Name $serviceName"
+            --scripts "Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -OutFile 'C:\\myapp.exe'; Start-Process 'C:\\myapp.exe'"
+                    
+
+      # - name: Deploy to Azure Windows VM as Service
+      #   run: |
+      #     az vm run-command invoke \
+      #       --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+      #       --name ${{ secrets.AZURE_VM_NAME }} \
+      #       --command-id RunPowerShellScript \
+      #       --scripts "$serviceName = 'MyGoAppService'; $exePath = 'C:\\myapp.exe'; if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) { Stop-Service -Name $serviceName -Force; sc.exe delete $serviceName; Start-Sleep -Seconds 3 }; Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -OutFile $exePath; Start-Sleep -Seconds 2; sc.exe create $serviceName binPath= $exePath start= auto; Start-Sleep -Seconds 2; Start-Service -Name $serviceName"
       
 
       # - name: Deploy to Azure Windows VM as Service
