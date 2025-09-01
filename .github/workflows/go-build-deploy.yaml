@@ -56,10 +56,10 @@ jobs:
 
       - name: Deploy to Azure Windows VM as Service
         run: |
-          az vm run-command invoke `
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} `
-            --name ${{ secrets.AZURE_VM_NAME }} `
-            --command-id RunPowerShellScript `
+          az vm run-command invoke \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ secrets.AZURE_VM_NAME }} \
+            --command-id RunPowerShellScript \
             --scripts @'
               $serviceName = "MyGoAppService"
               $exePath = "C:\myapp.exe"
