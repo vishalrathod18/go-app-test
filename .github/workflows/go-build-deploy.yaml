@@ -60,25 +60,34 @@ jobs:
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
             --name ${{ secrets.AZURE_VM_NAME }} \
             --command-id RunPowerShellScript \
-            --scripts @'
-              $serviceName = "MyGoAppService"
-              $exePath = "C:\myapp.exe"
+            --scripts "$serviceName = 'MyGoAppService'; $exePath = 'C:\\myapp.exe'; if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) { Stop-Service -Name $serviceName -Force; sc.exe delete $serviceName; Start-Sleep -Seconds 3 }; Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -OutFile $exePath; Start-Sleep -Seconds 2; sc.exe create $serviceName binPath= $exePath start= auto; Start-Sleep -Seconds 2; Start-Service -Name $serviceName"
+      
 
-              Write-Output "Stopping existing service if it exists..."
-              if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) {
-                Stop-Service -Name $serviceName -Force
-                sc.exe delete $serviceName
-                Start-Sleep -Seconds 3
-              }
+      # - name: Deploy to Azure Windows VM as Service
+      #   run: |
+      #     az vm run-command invoke \
+      #       --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+      #       --name ${{ secrets.AZURE_VM_NAME }} \
+      #       --command-id RunPowerShellScript \
+      #       --scripts @'
+      #         $serviceName = "MyGoAppService"
+      #         $exePath = "C:\myapp.exe"
 
-              Write-Output "Downloading latest binary..."
-              Invoke-WebRequest -Uri "https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp" -OutFile $exePath
-              Start-Sleep -Seconds 2
+      #         Write-Output "Stopping existing service if it exists..."
+      #         if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) {
+      #           Stop-Service -Name $serviceName -Force
+      #           sc.exe delete $serviceName
+      #           Start-Sleep -Seconds 3
+      #         }
 
-              Write-Output "Creating new Windows service..."
-              sc.exe create $serviceName binPath= $exePath start= auto
-              Start-Sleep -Seconds 2
+      #         Write-Output "Downloading latest binary..."
+      #         Invoke-WebRequest -Uri "https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp" -OutFile $exePath
+      #         Start-Sleep -Seconds 2
 
-              Write-Output "Starting service..."
-              Start-Service -Name $serviceName
-            '@        
+      #         Write-Output "Creating new Windows service..."
+      #         sc.exe create $serviceName binPath= $exePath start= auto
+      #         Start-Sleep -Seconds 2
+
+      #         Write-Output "Starting service..."
+      #         Start-Service -Name $serviceName
+      #       '@
