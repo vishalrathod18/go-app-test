@@ -1,4 +1,6 @@
-name: CI Build and Upload Go Project
+
+name: CI Build, Upload, and Deploy Go HTTP Server
+
 permissions:
   contents: read
   pull-requests: write
@@ -13,39 +15,47 @@ on:
 jobs:
   build-and-upload:
     runs-on: ubuntu-latest
+    env:
+      ARTIFACTORY_URL: https://uhgsaaspoc.jfrog.io/artifactory
+      ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+      ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+    outputs:
+      artifact_url: ${{ steps.upload.outputs.artifact_url }}
 
     steps:
-    # Step 1: Checkout the code
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    # Step 2: Set up Go environment
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: 1.21  # Specify the Go version
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
 
-    # Step 3: Build the Go project
-    - name: Build Go Project
-      run: |
-        cd go-app
-        go build -o ../myapp
+      - name: Run Go Tests
+        run: |
+          cd go-app
+          go test ./...
 
-    # Step 4: Upload artifact to JFrog Artifactory
-    - name: Upload to JFrog Artifactory
-      env:
-        ARTIFACTORY_URL: https://uhgsaaspoc.jfrog.io/artifactory
-        ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USER }}
-        ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_PASSWORD }}
-      run: |
-        curl -u $ARTIFACTORY_USER:$ARTIFACTORY_ACCESS_TOKEN \
-          -T myapp \
-          "$ARTIFACTORY_URL/go-uhg-go/myapp"
+      - name: Build Go Project for Windows
+        run: |
+          cd go-app
+          GOOS=windows GOARCH=amd64 go build -o ../myapp.exe
+
+      - name: Upload to JFrog Artifactory
+        id: upload
+        run: |
+          VERSION=${{ github.sha }}
+          ARTIFACT_PATH="myapp-${VERSION}.exe"
+          curl -u $ARTIFACTORY_USER:$ARTIFACTORY_PASSWORD             -T myapp.exe             "$ARTIFACTORY_URL/go-uhg-go/$ARTIFACT_PATH"
+          echo "artifact_url=$ARTIFACTORY_URL/go-uhg-go/$ARTIFACT_PATH" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build-and-upload
     runs-on: ubuntu-latest
-
+    env:
+      ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+      ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      
     steps:
       - name: Azure Login
         uses: azure/login@v1
@@ -54,69 +64,14 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Download myapp.exe to Azure VM
-        env:
-          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
-          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      - name: Download and Run myapp.exe on Windows VM
         run: |
           pair="${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}"
-          script="\$pair = '${pair}'; \
-          \$bytes = [System.Text.Encoding]::UTF8.GetBytes(\$pair); \
-          \$encoded = [Convert]::ToBase64String(\$bytes); \
-          Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -Headers @{ Authorization = 'Basic ' + \$encoded } -OutFile 'C:\\myapp.exe'"
+          artifact_url="${{ needs.build-and-upload.outputs.artifact_url }}"
+          script="\$pair = '${pair}';           \$bytes = [System.Text.Encoding]::UTF8.GetBytes(\$pair);           \$encoded = [Convert]::ToBase64String(\$bytes);           Invoke-WebRequest -Uri '${artifact_url}' -Headers @{ Authorization = 'Basic ' + \$encoded } -OutFile 'C:\myapp.exe';           Start-Process -FilePath 'C:\myapp.exe'"
 
-          az vm run-command invoke \
-            --resource-group "artifactory-migration" \
-            --name "vm1" \
-            --command-id RunPowerShellScript \
-            --scripts "$script"
-      
+          az vm run-command invoke             --resource-group "artifactory-migration"             --name "vm1"             --command-id RunPowerShellScript             --scripts "$script"
 
-      # - name: Deploy to Azure Windows VM (Run as Background Process)
-      #   # env:
-      #   # ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
-      #   # ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_PASSWORD }}
-      #   run: |
-      #     az vm run-command invoke \
-      #         --resource-group "artifactory-migration" \
-      #         --name "vm1" \
-      #         --command-id RunPowerShellScript \
-      #         --scripts "$pair = '${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD}'; $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair); $encoded = [Convert]::ToBase64String($bytes); Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -Headers @{ Authorization = 'Basic ' + $encoded } -OutFile 'C:\\myapp.exe'"
-
-      # - name: Deploy to Azure Windows VM as Service
-      #   run: |
-      #     az vm run-command invoke \
-      #       --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-      #       --name ${{ secrets.AZURE_VM_NAME }} \
-      #       --command-id RunPowerShellScript \
-      #       --scripts "$serviceName = 'MyGoAppService'; $exePath = 'C:\\myapp.exe'; if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) { Stop-Service -Name $serviceName -Force; sc.exe delete $serviceName; Start-Sleep -Seconds 3 }; Invoke-WebRequest -Uri 'https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp' -OutFile $exePath; Start-Sleep -Seconds 2; sc.exe create $serviceName binPath= $exePath start= auto; Start-Sleep -Seconds 2; Start-Service -Name $serviceName"
-      
-
-      # - name: Deploy to Azure Windows VM as Service
-      #   run: |
-      #     az vm run-command invoke \
-      #       --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-      #       --name ${{ secrets.AZURE_VM_NAME }} \
-      #       --command-id RunPowerShellScript \
-      #       --scripts @'
-      #         $serviceName = "MyGoAppService"
-      #         $exePath = "C:\myapp.exe"
-
-      #         Write-Output "Stopping existing service if it exists..."
-      #         if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) {
-      #           Stop-Service -Name $serviceName -Force
-      #           sc.exe delete $serviceName
-      #           Start-Sleep -Seconds 3
-      #         }
-
-      #         Write-Output "Downloading latest binary..."
-      #         Invoke-WebRequest -Uri "https://uhgsaaspoc.jfrog.io/artifactory/go-uhg-go/myapp" -OutFile $exePath
-      #         Start-Sleep -Seconds 2
-
-      #         Write-Output "Creating new Windows service..."
-      #         sc.exe create $serviceName binPath= $exePath start= auto
-      #         Start-Sleep -Seconds 2
-
-      #         Write-Output "Starting service..."
-      #         Start-Service -Name $serviceName
-      #       '@
+      - name: Verify HTTP Server
+        run: |
+          az vm run-command invoke             --resource-group "artifactory-migration"             --name "vm1"             --command-id RunPowerShellScript             --scripts "Invoke-WebRequest -Uri 'http://localhost:8080/health' -UseBasicParsing"
